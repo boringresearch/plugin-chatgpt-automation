@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      1.0
 // @description  Automatically submit questions in a queue to ChatGPT
-// @author       xihajun
+// @author       You
 // @match        https://chat.openai.com/*
 // @grant        none
 // ==/UserScript==
@@ -14,23 +14,75 @@
   const questionList = [];
   let isAutoSubmitting = false;
   let isWaitingForResponse = false;
-
-  function createUI() {
+function createUI() {
     const controlPanel = document.createElement('div');
+
     controlPanel.innerHTML = `
-      <div id="controlPanel" style="position: fixed; top: 20px; right: 20px; z-index: 9999; background-color: rgba(255, 255, 255, 0.8); padding: 10px; border-radius: 5px;">
-        <h3>Control Panel</h3>
-        <button id="startAutoSubmit" style="background-color: #4CAF50; border: none; color: white; padding: 5px 10px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; border-radius: 5px;">Start Auto Submit</button>
-        <div id="questionWindow" style="width: 200px; height: 100px; background-color: rgba(255, 255, 255, 0.5); border: 1px solid #000; margin-top: 10px; padding: 5px; overflow-y: auto;">
-          <h4>Questions</h4>
-          <ul id="questionList" style="list-style-type: none; margin: 0; padding: 0;"></ul>
+      <div id="controlPanel" style="position: fixed; top: 20px; right: 20px; z-index: 9999; background-color: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 10px; color: #333; cursor: move; resize: both; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <button id="toggleHideBar" style="background-color: #FFC107; border: none; color: white; padding: 5px 10px; text-align: center; text-decoration: none; display: inline-block; font-size: 14px; margin: 4px 2px; cursor: pointer; border-radius: 5px; transition: background-color 0.3s;">Hide</button>
+        <div id="panelContent">
+          <button id="startAutoSubmit" style="background-color: #4CAF50; border: none; color: white; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; border-radius: 5px; transition: background-color 0.3s;">Start Auto Submit</button>
+          <div id="questionWindow" style="width: 100%; height: 100px; background-color: rgba(255, 255, 255, 0.95); border: 1px solid #ddd; margin-top: 20px; padding: 10px; overflow-y: auto;">
+            <h4 style="margin-top: 0; margin-bottom: 10px; font-size: 18px; font-weight: bold;">Questions</h4>
+            <ul id="questionList" style="list-style-type: none; margin: 0; padding: 0;"></ul>
+          </div>
         </div>
       </div>
     `;
     document.body.appendChild(controlPanel);
+    document.getElementById('toggleHideBar').addEventListener('click', toggleHide);
 
     document.getElementById('startAutoSubmit').addEventListener('click', toggleAutoSubmit);
-  }
+
+    // Make the Control Panel draggable
+    const dragItem = document.getElementById('controlPanel');
+    let active = false;
+    let currentX;
+    let currentY;
+    let initialX;
+    let initialY;
+    let xOffset = 0;
+    let yOffset = 0;
+
+    dragItem.addEventListener('mousedown', dragStart, false);
+    document.addEventListener('mouseup', dragEnd, false);
+    document.addEventListener('mousemove', drag, false);
+
+    function dragStart(e) {
+      initialX = e.clientX - xOffset;
+      initialY = e.clientY - yOffset;
+
+      if (e.target === dragItem) {
+        active = true;
+      }
+    }
+
+    function dragEnd() {
+      initialX = currentX;
+      initialY = currentY;
+
+      active = false;
+    }
+
+    function drag(e) {
+      if (active) {
+        e.preventDefault();
+
+        currentX = e.clientX - initialX;
+        currentY = e.clientY - initialY;
+
+        xOffset = currentX;
+        yOffset = currentY;
+
+        setTranslate(currentX, currentY, dragItem);
+      }
+    }
+
+    function setTranslate(xPos, yPos, el) {
+      el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+    }
+}
+
 
   function toggleAutoSubmit() {
     isAutoSubmitting = !isAutoSubmitting;
@@ -40,6 +92,20 @@
       autoSubmitNextQuestion();
     }
   }
+  function toggleHide() {
+    const panelContent = document.getElementById('panelContent');
+    const hideBar = document.getElementById('toggleHideBar');
+    const controlPanelTitle = document.getElementById('controlPanelTitle');
+    if (panelContent.style.display === 'none') {
+        panelContent.style.display = 'block';
+        hideBar.innerHTML = 'Hide';
+        controlPanelTitle.style.display = 'block';
+    } else {
+        panelContent.style.display = 'none';
+        hideBar.innerHTML = 'Show';
+        controlPanelTitle.style.display = 'none';
+    }
+}
 
   function autoSubmitNextQuestion() {
     if (isAutoSubmitting && !isWaitingForResponse) {
@@ -99,10 +165,15 @@
     updateQuestionListUI();
   }
 
-  function updateQuestionListUI() {
+function updateQuestionListUI() {
+    const maxWordsToShow = 5;
     const questionListUI = document.getElementById('questionList');
-    questionListUI.innerHTML = questionList.map((q, i) => `<li>${i + 1}. ${q}</li>`).join('');
-  }
+    questionListUI.innerHTML = questionList.map((q, i) => {
+        const words = q.split(' ');
+        const shortQuestion = words.slice(0, maxWordsToShow).join(' ') + (words.length > maxWordsToShow ? '...' : '');
+        return `<li>${i + 1}. ${shortQuestion}</li>`;
+    }).join('');
+}
 
   function handleKeyPress(event) {
     if (event.ctrlKey && event.shiftKey && event.key === 'Enter') {
