@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      1.0
 // @description  Automatically submit questions in a queue to ChatGPT
-// @author       You
+// @author       xihajun
 // @match        https://chat.openai.com/*
 // @grant        none
 // ==/UserScript==
