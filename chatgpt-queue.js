@@ -124,7 +124,7 @@
 
 
     function submitQuestion(question) {
-        const textarea = document.querySelector('textarea[placeholder="Send a message."]');
+        const textarea = document.querySelector('textarea[placeholder="Send a message"]');
         const submitButton = document.querySelector('button[class*="absolute"]');
 
         if (textarea && submitButton) {
