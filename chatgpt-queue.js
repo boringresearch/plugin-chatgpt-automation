@@ -194,7 +194,7 @@
     function handleKeyPress(event) {
         if (event.ctrlKey && event.shiftKey && event.key === 'Enter') {
             event.preventDefault();
-            const textarea = document.querySelector('textarea[placeholder="Send a message."]');
+            const textarea = document.querySelector('textarea[placeholder="Send a message"]');
             const question = textarea.value;
             if (question.trim()) {
                 addQuestionToQueue(question);
