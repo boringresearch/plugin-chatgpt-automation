@@ -52,12 +52,10 @@
             initialX = e.clientX - xOffset;
             initialY = e.clientY - yOffset;
 
-            // Check if the target is not a button and is a child of the control panel
-            if (e.target.tagName !== 'BUTTON' && dragItem.contains(e.target)) {
+            if (e.target === dragItem) {
                 active = true;
             }
         }
-
 
         function dragEnd() {
             initialX = currentX;
