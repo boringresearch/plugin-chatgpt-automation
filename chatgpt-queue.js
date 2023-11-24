@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         ChatGPT Queue
 // @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  Automatically submit questions in a queue to ChatGPT
+// @version      2.0
+// @description  Automatically submit questions in a queue to ChatGPT (2.0) 2023/11
 // @author       xihajun
 // @match        https://chat.openai.com/*
 // @grant        none
@@ -108,28 +108,40 @@
         }
     }
 
-    function autoSubmitNextQuestion() {
-        if (isAutoSubmitting && !isWaitingForResponse) {
-            if (questionList.length > 0) {
-                const question = questionList.shift();
-                updateQuestionListUI();
-                submitQuestion(question);
-            } else {
-                toggleAutoSubmit();
-            }
+    function submitQuestion(question) {
+        let textarea = document.getElementById('prompt-textarea');
+        if (textarea) {
+            textarea.value = question;
+
+            // Dispatch an 'input' event to simulate typing in the textarea
+            let event = new Event('input', { bubbles: true });
+            textarea.dispatchEvent(event);
+
+            // Use a short delay to allow any JavaScript that reacts to the input event to run
+            setTimeout(() => {
+                // Attempt to find the submit button using the 'data-testid' attribute
+                let submitButton = document.querySelector('button[data-testid="send-button"]');
+
+                // If the submit button is found, click it
+                if (submitButton) {
+                    submitButton.click();
+                    waitForResponse();
+                } else {
+                    console.error('Submit button not found. Please check the button selector.');
+                }
+            }, 10000); // Adjust the delay as needed
+        } else {
+            console.error('Textarea not found.');
         }
     }
 
-
-    function submitQuestion(question) {
-        const textarea = document.querySelector('textarea[placeholder="Send a message"]');
-        const submitButton = document.querySelector('button[class*="absolute"]');
-
-        if (textarea && submitButton) {
-            textarea.value = question;
-            submitButton.disabled = false;
-            submitButton.click();
-            waitForResponse();
+    function autoSubmitNextQuestion() {
+        if (questionList.length > 0) {
+            const question = questionList.shift();
+            updateQuestionListUI();
+            submitQuestion(question);
+        } else {
+            console.log('Question list is empty.');
         }
     }
 
@@ -139,18 +151,15 @@
         const observer = new MutationObserver((mutationsList) => {
             for (const mutation of mutationsList) {
                 if (mutation.type === 'childList') {
-                    const regenerateResponse = document.evaluate(
-                        '//button[contains(., "Regenerate response")]',
-                        document,
-                        null,
-                        XPathResult.FIRST_ORDERED_NODE_TYPE,
-                        null
-                    ).singleNodeValue;
+                    // Check for the absence of the "Stop generating" button
+                    const stopGeneratingButton = document.querySelector('button[aria-label="Stop generating"]');
 
-                    if (regenerateResponse) {
+                    if (!stopGeneratingButton) {
                         observer.disconnect();
                         isWaitingForResponse = false;
-                        autoSubmitNextQuestion();
+                        setTimeout(() => {
+                            autoSubmitNextQuestion(); // Add a slight delay before submitting the next question
+                        }, 1000); // Adjust the delay as needed
                         break;
                     }
                 }
@@ -194,7 +203,7 @@
     function handleKeyPress(event) {
         if (event.ctrlKey && event.shiftKey && event.key === 'Enter') {
             event.preventDefault();
-            const textarea = document.querySelector('textarea[placeholder="Send a message"]');
+            const textarea = document.getElementById('prompt-textarea'); // Corrected this line
             const question = textarea.value;
             if (question.trim()) {
                 addQuestionToQueue(question);
