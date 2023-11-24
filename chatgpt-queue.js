@@ -52,12 +52,10 @@
             initialX = e.clientX - xOffset;
             initialY = e.clientY - yOffset;
 
-            // Check if the target is not a button and is a child of the control panel
-            if (e.target.tagName !== 'BUTTON' && dragItem.contains(e.target)) {
+            if (e.target === dragItem) {
                 active = true;
             }
         }
-
 
         function dragEnd() {
             initialX = currentX;
@@ -124,7 +122,7 @@
 
 
     function submitQuestion(question) {
-        const textarea = document.querySelector('textarea[placeholder="Send a message."]');
+        const textarea = document.querySelector('textarea[placeholder="Send a message"]');
         const submitButton = document.querySelector('button[class*="absolute"]');
 
         if (textarea && submitButton) {
@@ -196,7 +194,7 @@
     function handleKeyPress(event) {
         if (event.ctrlKey && event.shiftKey && event.key === 'Enter') {
             event.preventDefault();
-            const textarea = document.querySelector('textarea[placeholder="Send a message."]');
+            const textarea = document.querySelector('textarea[placeholder="Send a message"]');
             const question = textarea.value;
             if (question.trim()) {
                 addQuestionToQueue(question);
